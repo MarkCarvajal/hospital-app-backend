@@ -4,12 +4,25 @@ const Usuario = require("../models/usuario");
 const { generarJWT } = require("../helpers/jwt");
 
 const getUsuarios = async (req, res) => {
+  // query params ?desde=5 , para mostrar los registros a contar de ese numero
+  const desde = Number(req.query.desde) || 0;
+
   // Funcion para leet el registro desde la base de dato, los nombres de campos son para filtrar los que solamente quieres mostrar ya que trae all
-  const usuarios = await Usuario.find({}, "nombre apellido email role google");
+  // const usuarios = await Usuario.find({}, "nombre apellido email role google")
+  //   .skip(desde)
+  //   .limit(5);
+
+  // const total = await Usuario.count();
+
+  const [usuarios, total] = await Promise.all([
+    Usuario.find({}, "nombre apellido email role google img").skip(desde).limit(5),
+    Usuario.countDocuments(),
+  ]);
 
   res.json({
     ok: true,
     usuarios,
+    total,
   });
 };
 
@@ -40,13 +53,13 @@ const crearUsuarios = async (req, res = response) => {
     await usuario.save();
 
     // Generar token
-    const token = await generarJWT( usuario.id );
+    const token = await generarJWT(usuario.id);
 
     // Respuesta que entrega el servicio al finalizar ok o al fallar
     res.json({
       ok: true,
       usuario,
-      token
+      token,
     });
   } catch (error) {
     console.log(error);
@@ -109,7 +122,6 @@ const borrarUsuario = async (req, res = response) => {
   // Obtiene ID
   const uid = req.params.id;
   try {
-
     const usuarioDB = await Usuario.findById(uid);
 
     if (!usuarioDB) {
@@ -119,11 +131,11 @@ const borrarUsuario = async (req, res = response) => {
       });
     }
 
-    await Usuario.findByIdAndDelete( uid );
+    await Usuario.findByIdAndDelete(uid);
 
     res.json({
       ok: true,
-      msg: "Usuario Eliminado"
+      msg: "Usuario Eliminado",
     });
   } catch (error) {
     console.log(error);
